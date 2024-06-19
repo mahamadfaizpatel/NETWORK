@@ -1,0 +1,145 @@
+{% extends "network/layout.html" %} {% load static %}{% block body %}
+<div class="container">
+  <div class="w-100">
+    <div class="row my-2">
+      <h1 class="col-10">
+        Profile:
+        <span class="text-primary">{{ profile_data.username|upper }}</span>
+      </h1>
+
+      <!-- follow/unfollow buttons -->
+      {% if user.is_authenticated %} {% if user.id != profile_data.id %}
+      <div class="col-2">
+        {% if user in profile_data.followers.all %}
+
+        <!-- user is following profile -->
+        <form action="{% url 'unfollow' user_id=user.id %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="profile" value="{{profile_data.id}}" />
+          <button type="submit" class="btn btn-secondary">Unfollow</button>
+        </form>
+
+        {% else %}
+
+        <!-- user is not following profile -->
+        <form action="{% url 'follow' user_id=user.id %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="profile" value="{{profile_data.id}}" />
+          <button type="submit" class="btn btn-primary">Follow</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endif %} {% endif %}
+    </div>
+
+    <h2>Followers: {{profile_data.followers.all.count}}</h2>
+    <h2>Following: {{profile_data.following.all.count}}</h2>
+  </div>
+</div>
+
+<hr />
+<div class="container my-3 d-flex justify-content-center">
+  <div class="w-50">
+    <!-- show posts data in card format -->
+    {% for post in page_obj %}
+    <div class="card my-3">
+      <div class="card-body" data-id="{{post.id}}">
+        <h4 class="card-title text-success">
+          <!-- profile link -->
+          <a href="{% url 'profile' profile_id=post.user.id %}"
+            >@{{ post.user }}</a
+          >
+        </h4>
+        <p class="card-subtitle mb-2 text-muted">{{ post.date }}</p>
+        <p class="card-text" id="content_{{post.id}}">{{ post.content }}</p>
+
+        <div class="d-flex justify-content-between">
+          <!-- like button -->
+          {% if user.is_authenticated %} {% if user in post.like.all %}
+          <button
+            class="btn btn-danger"
+            id="btn_like_{{post.id}}"
+            onclick="like('{{post.id}}', '{{user.id}}')"
+          >
+            🤍{{post.like.all.count}}
+          </button>
+          {% else %}
+          <button
+            class="btn btn-secondary"
+            id="btn_like_{{post.id}}"
+            onclick="like('{{post.id}}', '{{user.id}}')"
+          >
+            🤍{{post.like.all.count}}
+          </button>
+          {% endif %}
+
+          <!-- user is not authenticated -->
+          {% else %}
+          <button class="btn btn-secondary btn_like" disabled>
+            🤍{{post.like.all.count}}
+          </button>
+          {% endif %}
+          <!-- edit option for author -->
+          {% if user == post.user %}
+          <button
+            class="btn btn-primary"
+            id="btn_edit_{{post.id}}"
+            onclick="edit('{{post.id}}')"
+          >
+            Edit
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- pagination -->
+<div class="sticky-bottom">
+  <hr class="w-50" />
+  <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+      <!-- enable/disable previous button -->
+      {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a
+          class="page-link"
+          href="?page={{ page_obj.previous_page_number }}"
+          tabindex="-1"
+          >Previous</a
+        >
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#" tabindex="-1">Previous</a>
+      </li>
+      {% endif %}
+
+      <!-- list number of pages -->
+      {% for i in page_obj.paginator.page_range %}
+      <li class="page-item {% if i == page_obj.number %}active{% endif %}">
+        <a class="page-link" href="?page={{i}}">{{i}}</a>
+      </li>
+      {% endfor %}
+
+      <!-- enable/disable previous button -->
+      {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}"
+          >Next</a
+        >
+      </li>
+      {% else %}
+      <li class="page-item disabled">
+        <a class="page-link" href="#">Next</a>
+      </li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+
+{% endblock %} {% block script %}
+<script src="{% static 'network/index.js' %}"></script>
+{% endblock %}
